@@ -127,3 +127,11 @@ END
 --Now we will begin by exploring the datasets one by one and look for crucial preliminary insights!
 EXEC bronze_layer.load_bronze;
 --- Until this point we have successfully loaded the data into all the tables using STORED PROCEDURE
+
+select* from bronze_layer.crm_cust_info;
+select* from bronze_layer.crm_prd_info;
+select* from bronze_layer.crm_sales_details;
+
+SELECT* FROM bronze_layer.erp_cust_az12;
+select* from bronze_layer.erp_loc_a101;
+select* from bronze_layer.erp_px_cat_g1v2;
