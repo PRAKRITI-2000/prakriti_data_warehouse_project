@@ -1,1 +1,98 @@
+-- EXPLORATORY DATA ANALYSIS
+-- This task involves identifying those columns which can serve as the primary key and help build Primary-Foreign Key relationships among tables
+-- or help us to join the tables to fetch data. (IGNORE IF ALREADY DONE)
+
+--Table 1: crm_cust_info
+ALTER TABLE bronze_layer.crm_cust_info  
+ADD CONSTRAINT PK_CRM_Customer PRIMARY KEY (cst_id,cst_key);
+
+--Table 2: crm_prd_info
+ALTER TABLE bronze_layer.crm_prd_info  
+ADD CONSTRAINT PK_CRM_ProductID PRIMARY KEY (prd_id);
+
+--Table 3 crm_sales_details
+ALTER TABLE bronze_layer.crm_sales_details  
+ADD CONSTRAINT PK_CRM_Sales PRIMARY KEY (sls_prd_key,sls_cust_id,sls_ord_num);
+
+--Table 4 erp_loc_a101
+ALTER TABLE bronze_layer.erp_loc_a101  
+ADD CONSTRAINT ERP_loc PRIMARY KEY (cid);
+
+--Table 5 erp_cust_az12
+ALTER TABLE bronze_layer.erp_cust_az12 
+ADD CONSTRAINT PK_ERP_cust PRIMARY KEY (cid);
+
+--Table 6 px_cat_g1v2
+ALTER TABLE bronze_layer.erp_px_cat_g1v2 
+ADD CONSTRAINT PK_ERP_Cat PRIMARY KEY (id);
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TASK 2: Fetching all the data related to products and merging the data into one table for further analysis
+--Answer: In this task, to fetch the details of all the products, we need to use two tables: CRM_prd_info and ERP_PX_CAT_G1V2. 
+--To ensure efficient JOIN operations, a connection must be established between these tables. 
+--This will be achieved by extracting a substring from CRM_prd_info.prd_key and matching it with the entire column ERP_px_cat_g1v2.id.
+
+select* from bronze_layer.crm_prd_info;
+select* from bronze_layer.erp_px_cat_g1v2;
+
+with prd_cte as (
+select a.prd_id as product_id, REPLACE(SUBSTRING(a.prd_key,1,5),'-','_') as category_id, REPLACE(SUBSTRING(a.prd_key,7,LEN(a.prd_key)),'-','_') as product_key,
+TRIM(a.prd_nm) as product_name, prd_cost as product_MRP, prd_line as product_line,
+CASE WHEN a.prd_start_dt>CONVERT(DATE,a.prd_end_dt) AND a.prd_end_dt is not null THEN CONVERT(DATE,a.prd_end_dt) 
+ELSE a.prd_start_dt end as product_manufacturing_date, a.prd_start_dt as product_warranty_date
+from bronze_layer.crm_prd_info as a)
+
+select c.product_id, c.product_key, c.category_id, b.cat as product_category, b.subcat as product_sub_category, b.maintenance,
+c.product_name, c.product_MRP, c.product_line,c.product_manufacturing_date, 
+case when c.product_warranty_date=c.product_manufacturing_date then NULL ELSE c.product_warranty_date end as product_warranty_date
+from prd_cte as c,bronze_layer.erp_px_cat_g1v2 as b where TRIM(c.category_id) IN (select DISTINCT(TRIM(b.id)) FROM bronze_layer.erp_px_cat_g1v2)
+order by c.product_id asc;
+
+
+--Transformations Performed: 
+
+--Step 1: Extracted the Category ID: Pulled out the "category_id" from the prd_key column and used it as the primary key for the table.
+--Step 2: Created a New Product Key: Extracted the remaining part of prd_key, excluding category_id, and used it as the new product key.
+--Step 3: Fixed Incorrect Date Order: Identified that prd_end_dt was earlier than prd_start_dt. The two columns were swapped and renamed as Manufacturing Date and Warranty Date.
+--Step 4: Handled Warranty Dates:For rows where Manufacturing Date was equal to Warranty Date, the Warranty Date was set to NULL in the subsequent SELECT statement.
+--Step 5: Created the Final Table: After performing all the transformations, the final table was created in the Silver Layer and named "Final_Product_Info".
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TASK 3: Fetching all the data related to customers and merging the data into one table for further analysis
+--Answer: In this task, to fetch the details of all the customers, we need to use two tables: CRM_cust_info and ERP_CUST_AZ12. 
+--To ensure efficient JOIN operations, a connection must be established between these tables. 
+--This will be achieved by extracting a substring from CRM_prd_info.prd_key and matching it with the entire column ERP_px_cat_g1v2.id.
+
+select* from bronze_layer.crm_cust_info;
+SELECT* FROM bronze_layer.erp_cust_az12;
+
+select d.cst_id,d.cst_key, TRIM(CONCAT(d.cst_firstname,' ',cst_lastname)) as customer_name, e.bdate as birth_date, 
+case when d.cst_gndr='M' then 'Male' when d.cst_gndr='F' then 'Female' else 'Not Mentioned'  end as customer_gender, 
+case when d.cst_marital_status='M' then 'Married' else 'Single' end as marital_status, d.cst_create_date
+from bronze_layer.crm_cust_info as d inner join bronze_layer.erp_cust_az12 as e on TRIM(d.cst_key)=TRIM(e.cid);
+
+--Transformations Performed
+-- Step 1: The first and last names were concatenated and then trimmed to ensure each customer's full name is displayed without any extra spaces.
+-- Step 2: While joining the tables, gender was assigned to customers whose gender details were available. Those whose gender was not metioned
+-- they were labelled as "Not Mentioned".
+-- Step 3: The marital status was standardized and labeled as "Married" and "Single" for better clarity.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---Task 4: Exploring and Pre-Processing the sales_details table
+select* from bronze_layer.crm_sales_details;
+
+select TRIM(sls_ord_num) as order_number, TRIM(sls_prd_key) as product_key, CONVERT(DATE,sls_order_dt) as order_date, CONVERT(DATE,sls_ship_dt) as shipping_date,
+CONVERT(DATE, sls_due_dt) as due_date,case when sls_quantity=sls_sales then 1 else sls_sales/sls_price end as quantity_sold, 
+sls_price as product_MRP,sls_sales as total_sales_made
+from bronze_layer.crm_sales_details
+where sls_sales<>0 or sls_sales!<0 or sls_quantity!=0 or sls_sales!=0;
+
+-- Because it is a business rule that quanity, sales and MRP of the products can never be less than 0 or equal to 0
+-- The total number of records filtered out from here is 8
+
+--Transformations Performed
+--Step 1) The date format for all the columns were changed. 
+--Step 2) The quantity in each order was calculated by dividing the sales column by the price column
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
