@@ -1,1 +1,38 @@
+CREATE DATABASE data_warehousing_project_prakriti;
+USE data_warehousing_project_prakriti;
 
+-- Now we will be creating the first layer of the data warehouse i.e. the BRONZE LAYER and insert the data into respective tables
+CREATE SCHEMA bronze_layer;
+
+--Table 1: crm_cust_info
+CREATE TABLE bronze_layer.crm_cust_info (cst_id int not null, cst_key varchar(50) NOT NULL, cst_firstname varchar(20) NOT NULL, cst_lastname varchar(20),
+cst_marital_status varchar(10),cst_gndr varchar(10) NULL,cst_create_date DATE NULL);
+ALTER TABLE bronze_layer.crm_cust_info  
+ADD CONSTRAINT PK_CRM_Customer PRIMARY KEY (cst_id,cst_key);
+
+--Table 2: crm_prd_info
+CREATE TABLE bronze_layer.crm_prd_info (prd_id INT not null, prd_key NVARCHAR(50),prd_nm NVARCHAR(50),prd_cost INT,
+prd_line NVARCHAR(50),prd_start_dt DATE,prd_end_dt DATETIME);
+ALTER TABLE bronze_layer.crm_prd_info  
+ADD CONSTRAINT PK_CRM_ProductID PRIMARY KEY (prd_id);
+
+--Table 3 crm_sales_details
+CREATE TABLE bronze_layer.crm_sales_details (sls_ord_num NVARCHAR(50) not null, sls_prd_key NVARCHAR(50) not null, sls_cust_id INT not null, sls_order_dt DATETIME, 
+sls_ship_dt DATETIME, sls_due_dt DATETIME, sls_sales INT, sls_quantity INT, sls_price INT);
+ALTER TABLE bronze_layer.crm_sales_details  
+ADD CONSTRAINT PK_CRM_Sales PRIMARY KEY (sls_prd_key,sls_cust_id,sls_ord_num);
+
+--Table 4 erp_loc_a101
+CREATE TABLE bronze_layer.erp_loc_a101 (cid NVARCHAR(50) not null, cntry NVARCHAR(50));
+ALTER TABLE bronze_layer.erp_loc_a101  
+ADD CONSTRAINT ERP_loc PRIMARY KEY (cid);
+
+--Table 5 erp_cust_az12
+CREATE TABLE bronze_layer.erp_cust_az12 (cid NVARCHAR(50) not null, bdate DATE, gen NVARCHAR(50));
+ALTER TABLE bronze_layer.erp_cust_az12 
+ADD CONSTRAINT PK_ERP_cust PRIMARY KEY (cid);
+
+--Table 6 px_cat_g1v2
+CREATE TABLE bronze_layer.erp_px_cat_g1v2 (id NVARCHAR(50) not null, cat NVARCHAR(50), subcat NVARCHAR(50), maintenance NVARCHAR(50));
+ALTER TABLE bronze_layer.erp_px_cat_g1v2 
+ADD CONSTRAINT PK_ERP_Cat PRIMARY KEY (id);
