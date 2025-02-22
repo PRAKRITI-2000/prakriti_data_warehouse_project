@@ -2,7 +2,7 @@
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 create schema silver_layer;
 
-----TABLE 1: silver_layer.final_sales_details
+----TABLE 1: silver_layer.final_product_details
 
 create table silver_layer.product_details (
 product_id int primary key, product_key varchar(20), category_id varchar(10),product_category varchar(20),product_sub_category varchar(20),maintenance varchar(5),
