@@ -1,0 +1,49 @@
+--Pushing the Data in Silver Layer using the EDA script written in the bronze_layer
+create schema silver_layer;
+
+----TABLE 1: silver_layer.final_sales_details
+
+create table silver_layer.product_details (
+product_id int primary key, product_key varchar(20), category_id varchar(10),product_category varchar(20),product_sub_category varchar(20),maintenance varchar(5),
+product_name varchar(50),product_MRP int,product_line varchar(2),product_manufacturing_date date,product_warranty_date date);
+
+with prd_cte as(
+select a.prd_id as product_id, REPLACE(SUBSTRING(a.prd_key,1,5),'-','_') as category_id, REPLACE(SUBSTRING(a.prd_key,7,LEN(a.prd_key)),'-','_') as product_key,
+TRIM(a.prd_nm) as product_name, prd_cost as product_MRP, prd_line as product_line,
+CASE WHEN a.prd_start_dt>CONVERT(DATE,a.prd_end_dt) AND a.prd_end_dt is not null THEN CONVERT(DATE,a.prd_end_dt) 
+ELSE a.prd_start_dt end as product_manufacturing_date, a.prd_start_dt as product_warranty_date
+from bronze_layer.crm_prd_info as a),
+
+prd_cte_2 as (select c.product_id, c.product_key, c.category_id, b.cat as product_category, b.subcat as product_sub_category, b.maintenance,
+c.product_name, c.product_MRP, c.product_line,c.product_manufacturing_date, 
+case when c.product_warranty_date=c.product_manufacturing_date then NULL ELSE c.product_warranty_date end as product_warranty_date
+from prd_cte as c,bronze_layer.erp_px_cat_g1v2 as b where TRIM(c.category_id) IN (select DISTINCT(TRIM(b.id)) FROM bronze_layer.erp_px_cat_g1v2))
+
+INSERT INTO silver_layer.product_details (product_id, product_key, category_id, product_category,product_sub_category,maintenance,
+product_name, product_MRP, product_line,product_manufacturing_date,product_warranty_date)
+
+select*from prd_cte_2;
+select* from silver_layer.product_details;
+
+--- This is the final format of the product_details that is free from duplicates and each product has a warranty_date corresponding to it
+
+create table silver_layer.final_products_details(product_id int, product_key varchar(20), category_id varchar(10), product_category varchar(20),
+product_sub_category varchar(20),maintenance varchar(5),
+product_name varchar(50), product_MRP int, product_line varchar(10),product_manufacturing_date date, product_warranty_date date);
+
+with prd_cte_3 as (select product_id, product_key, category_id, product_category,product_sub_category,maintenance,
+product_name, product_MRP, product_line,product_manufacturing_date, 
+case when product_warranty_date is null then convert(date,dateadd(year,4,dateadd(month,5,product_manufacturing_date))) else product_warranty_date 
+end as product_warranty_date,row_number() over(partition by product_name order by product_MRP desc) as rn_MRP
+from silver_layer.product_details as w),
+
+prd_cte_4 as(select product_id, TRIM(REPLACE(product_key,'_','-')) as product_key, category_id, product_category,product_sub_category,maintenance,
+product_name, product_MRP, product_line,product_manufacturing_date,product_warranty_date from prd_cte_3 where rn_MRP=1 and product_MRP<>0)
+
+insert into silver_layer.final_products_details (product_id, product_key, category_id, product_category, product_sub_category,maintenance,
+product_name, product_MRP, product_line,product_manufacturing_date,product_warranty_date)
+
+select*from prd_cte_4;
+select*from silver_layer.final_products_details;
+
+
