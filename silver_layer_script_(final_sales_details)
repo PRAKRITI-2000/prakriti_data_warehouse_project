@@ -1,0 +1,16 @@
+---Table 3: silver_layer.final_sales_details
+
+--- Inserting the table that contains all the sales data 
+create table silver_layer.final_sales_details (order_number varchar(10), sales_product_key varchar(10),order_date date, shipping_date date,
+due_date date, quantity_sold int,product_MRP int, total_sales_made int, primary key (order_number,sales_product_key));
+
+insert into silver_layer.final_sales_details (order_number, sales_product_key, order_date, shipping_date,
+due_date, quantity_sold,product_MRP, total_sales_made)
+
+select TRIM(sls_ord_num) as order_number,sls_prd_key as sales_product_key, CONVERT(DATE,sls_order_dt) as order_date, CONVERT(DATE,sls_ship_dt) as shipping_date,
+CONVERT(DATE, sls_due_dt) as due_date,case when sls_quantity=sls_sales then 1 else sls_sales/sls_price end as quantity_sold, 
+sls_price as product_MRP,sls_sales as total_sales_made
+from bronze_layer.crm_sales_details
+where sls_sales<>0 or sls_sales!<0 or sls_quantity!=0 or sls_sales!=0;
+
+select* from silver_layer.final_sales_details;
