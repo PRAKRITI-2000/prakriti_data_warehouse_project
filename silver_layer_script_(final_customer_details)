@@ -1,16 +1,16 @@
 ---Table 2: silver_layer_final_customer_details
 
----Inserting the table that contains the data of all the customers
 create table silver_layer.final_customer_details(cst_id int primary key, cst_key varchar(20),
-customer_name varchar(25),birth_date date, customer_gender varchar(15),marital_status varchar(10),
+customer_name varchar(25),birth_date date, customer_gender varchar(15),marital_status varchar(10),country varchar(20),
 cst_create_date date);
 
-insert into silver_layer.final_customer_details(cst_id, cst_key, customer_name,birth_date, customer_gender,marital_status,
+insert into silver_layer.final_customer_details(cst_id, cst_key, customer_name,birth_date,customer_gender,marital_status,country,
 cst_create_date)
 
 select d.cst_id,d.cst_key, TRIM(CONCAT(d.cst_firstname,' ',cst_lastname)) as customer_name, e.bdate as birth_date, 
 case when d.cst_gndr='M' then 'Male' when d.cst_gndr='F' then 'Female' else 'Not Mentioned'  end as customer_gender, 
-case when d.cst_marital_status='M' then 'Married' else 'Single' end as marital_status, d.cst_create_date
-from bronze_layer.crm_cust_info as d inner join bronze_layer.erp_cust_az12 as e on TRIM(d.cst_key)=TRIM(e.cid);
+case when d.cst_marital_status='M' then 'Married' else 'Single' end as marital_status, f.cntry as country , d.cst_create_date
+from bronze_layer.crm_cust_info as d inner join bronze_layer.erp_cust_az12 as e on TRIM(d.cst_key)=TRIM(e.cid)
+inner join bronze_layer.erp_loc_a101 as f on TRIM(d.cst_key)= TRIM(REPLACE(f.cid,'-',''));
 
 select* from silver_layer.final_customer_details;
