@@ -1,4 +1,3 @@
-# prakriti_data_warehouse_project
-In this project, I have built a SQL data warehouse form scratch for a hypothetical company using ETL processes, data modelling and visual analytics.
-Welcome to this Data Warehousing Project,
-Through this project we will be building a complex data warehouse project and generate analytcis solution for the my porfolio.
+Background: A rapidly growing D2C (Direct-to-Consumer) gifting brand is expanding its digital footprint and generating large volumes of data across multiple sources through e-commerce transactions, customer interactions, product inventories, marketing campaigns, and user feedback. The brand wants to evaluate the feasibility of a full-scale data warehouse by constructing a preliminary version using a sample chunk of its data.
+
+Objective:  The primary goal is to design and implement a simple data warehouse architecture that efficiently stores, segregates,  organizes, and processes data from multiple sources. This will help the company assess scalability, performance, and  ease of data retrieval before committing to a full-scale deployment
